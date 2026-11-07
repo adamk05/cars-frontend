@@ -1,7 +1,8 @@
+import axios from 'axios';
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Car, NewCar } from "../models/car";
-import { getCarById, updateCar } from "../services/car.service";
+import { getCarById, updateCar } from "../services/carService";
 
 export default function EditCarPage() {
     const [formData, setFormData] = useState({
@@ -18,7 +19,7 @@ export default function EditCarPage() {
     const navigate = useNavigate();
 
     const { id } = useParams();
-    const [car, setCar] = useState<Car | null>(null);
+    const [, setCar] = useState<Car | null>(null);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -34,11 +35,14 @@ export default function EditCarPage() {
                     luggageCapacity: fetchedCar?.luggageCapacity || 0,
                     engineCapacity: fetchedCar?.engineCapacity || 0,
                     fuelType: fetchedCar?.fuelType || 0,
-                    productionDate: fetchedCar?.productionDate || '',
+                    productionDate: fetchedCar?.productionDate ? fetchedCar.productionDate.split('T')[0] : '',
                     averageFuelConsumption: fetchedCar?.averageFuelConsumption || 0,
                     bodyType: fetchedCar?.bodyType || 0
                 });
             } catch (error: any) {
+                if (axios.isCancel(error)) {
+                    return;
+                }
                 console.error(error);
             }
         }
@@ -49,21 +53,30 @@ export default function EditCarPage() {
     }, [id]);
 
     function handleChange(e: any) {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
         setFormData({
             ...formData,
-            [name]: value
+            [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
         });
     };
 
     async function handleSubmit(e: any) {
-        async function editCar(carData: NewCar) {
-            await updateCar(id!, carData);
-        }
         e.preventDefault();
-        const carData = formData as NewCar;
-        await editCar(carData);
-        navigate(`/cars/${id}`);
+        try {
+            const carData: NewCar = {
+                ...formData,
+                doorsNumber: Number(formData.doorsNumber),
+                luggageCapacity: Number(formData.luggageCapacity),
+                engineCapacity: Number(formData.engineCapacity),
+                fuelType: Number(formData.fuelType),
+                averageFuelConsumption: Number(formData.averageFuelConsumption),
+                bodyType: Number(formData.bodyType),
+            };
+            await updateCar(id!, carData);
+            navigate(`/cars/${id}`);
+        } catch (error: any) {
+            alert(error.message || 'Blad podczas edycji samochodu');
+        }
     };
 
     return (
@@ -95,7 +108,6 @@ export default function EditCarPage() {
                     <input type="number" name="doorsNumber" value={formData.doorsNumber} onChange={handleChange} min="0"
                         className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                 </div>
-
 
                 <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-1">Luggage Capacity (L)</label>

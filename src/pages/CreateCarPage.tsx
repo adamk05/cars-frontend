@@ -1,10 +1,9 @@
 import { useState } from "react";
 import type { NewCar } from "../models/car";
-import { createCar } from "../services/car.service";
+import { createCar } from "../services/carService";
 import { useNavigate } from "react-router";
 
 export default function CreateCarPage() {
-
     const [formData, setFormData] = useState({
         brand: '',
         model: '',
@@ -23,18 +22,30 @@ export default function CreateCarPage() {
     }   
 
     function handleChange(e: any) {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
         setFormData({
             ...formData,
-            [name]: value
+            [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
         });
     };
 
     async function handleSubmit(e: any) {
         e.preventDefault();
-        const carData = formData as NewCar;
-        await addCar(carData);
-        navigate('/cars');
+        try {
+            const carData: NewCar = {
+                ...formData,
+                doorsNumber: Number(formData.doorsNumber),
+                luggageCapacity: Number(formData.luggageCapacity),
+                engineCapacity: Number(formData.engineCapacity),
+                fuelType: Number(formData.fuelType),
+                averageFuelConsumption: Number(formData.averageFuelConsumption),
+                bodyType: Number(formData.bodyType),
+            };
+            await addCar(carData);
+            navigate('/cars');
+        } catch (error: any) {
+            alert(error.message || 'Blad podczas dodawania samochodu');
+        }
     };
 
     return (
@@ -66,7 +77,6 @@ export default function CreateCarPage() {
                     <input type="number" name="doorsNumber" value={formData.doorsNumber} onChange={handleChange} min="0"
                         className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                 </div>
-
 
                 <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-1">Luggage Capacity (L)</label>
